@@ -6,8 +6,8 @@ USTRUCT()
 struct FCellData
 {
 	GENERATED_BODY()
-	FCellData() : Row(0), Col(0), Idx(-1), bIsMine(false), NearbyMinesCount(-1) {}
-	FCellData(int32 Row, int32 Col, int32 Idx, bool bIsMine = false, int32 NearbyMines = -1) : Row(Row), Col(Col), Idx(Idx), bIsMine(bIsMine), NearbyMinesCount(NearbyMines) {}
+	FCellData() : Row(0), Col(0), Idx(-1), bIsFlagged(false), bIsMine(false), NearbyMinesCount(-1) {}
+	FCellData(int32 Row, int32 Col, int32 Idx, bool bIsFlagged = false, bool bIsMine = false, int32 NearbyMines = -1) : Row(Row), Col(Col), Idx(Idx), bIsFlagged(bIsFlagged), bIsMine(bIsMine), NearbyMinesCount(NearbyMines) {}
 
 	int32 GetRow() const
 	{
@@ -22,6 +22,16 @@ struct FCellData
 	int32 GetIndex() const
 	{
 		return Idx;
+	}
+
+	bool IsFlagged() const
+	{
+		return bIsFlagged;
+	}
+
+	void SetIsFlagged(bool IsFlagged)
+	{
+		bIsFlagged = IsFlagged;
 	}
 
 	int32 IsMine() const
@@ -55,6 +65,7 @@ private:
 	int32 Row;
 	int32 Col;
 	int32 Idx;
+	bool bIsFlagged;
 	bool bIsMine;
 	int32 NearbyMinesCount;
 };

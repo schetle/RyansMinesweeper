@@ -4,6 +4,8 @@
 #include "Widgets/Input/SSpinBox.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 
+#include "SRightClickableButton.h"
+
 #define LOCTEXT_NAMESPACE "SMinesweeper"
 
 #define DEFAULT_WIDTH 10
@@ -166,7 +168,7 @@ void SMinesweeper::Construct(const FArguments& InArgs)
 
 TSharedRef<SWidget> SMinesweeper::ConstructCellButton(int32 Idx)
 {
-	return SNew(SButton)
+	TSharedRef<SRightClickableButton> Button = SNew(SRightClickableButton)
 		.IsEnabled_Lambda([this, Idx]()
 		{
 			check(Idx < MinesData.Num())
@@ -197,15 +199,41 @@ TSharedRef<SWidget> SMinesweeper::ConstructCellButton(int32 Idx)
 					const FCellData* Cell = &MinesData[Idx];
 
 					// Reveal mines at the end of a game, or if debug mines
-					if (Cell->IsMine() && (!CanPlay() || IsDebugMinesEnabled()))
+					// We'll also make sure to display the Flag state if we were flagged
+					if (!CanPlay() || IsDebugMinesEnabled())
 					{
-						return FText::FromString("M");
+						if (Cell->IsMine())
+						{
+							if (Cell->IsFlagged())
+							{
+								return FText::FromString("F-M");
+							}
+
+							return FText::FromString("M");
+						}
+					}
+
+					if (Cell->IsFlagged())
+					{
+						return FText::FromString("F");
 					}
 					
 					return Cell->GetNearbyMinesCount() > 0 ? FText::FromString(FString::FromInt(Cell->GetNearbyMinesCount())) : FText();
 				})
 			]
 		];
+
+	Button->SetOnRightMouseButtonClicked(FOnClicked::CreateLambda([this, Idx]()
+	{
+		check(Idx < MinesData.Num())
+		
+		FCellData* Cell = &MinesData[Idx];
+		Cell->SetIsFlagged(!Cell->IsFlagged());
+		
+		return FReply::Handled();
+	}));
+	
+	return Button;
 }
 
 void SMinesweeper::GenerateGrid()
@@ -315,7 +343,7 @@ void SMinesweeper::ActivateNearbyCells(int32 CellIndex)
 			int32 AdjacentCellIndex = -1;
 			if (TryGetAdjacentCellIndex(CurrentCell, i, j, AdjacentCellIndex))
 			{
-				if (!MinesData[AdjacentCellIndex].IsMine() && !MinesData[AdjacentCellIndex].WasActivated())
+				if (!MinesData[AdjacentCellIndex].IsMine() && !MinesData[AdjacentCellIndex].IsFlagged() && !MinesData[AdjacentCellIndex].WasActivated())
 				{
 					ActivateCell(AdjacentCellIndex);
 				}	
@@ -334,6 +362,11 @@ void SMinesweeper::ActivateCell(int32 Idx)
 	check(Idx < MinesData.Num())
 	
 	FCellData* Cell = &MinesData[Idx];
+
+	if (Cell->IsFlagged())
+	{
+		return;
+	}
 
 	if (Cell->IsMine())
 	{
